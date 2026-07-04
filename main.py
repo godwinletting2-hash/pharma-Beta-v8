@@ -90,7 +90,11 @@ async def healthz() -> JSONResponse:
 # ── Root route ────────────────────────────────────────────────────────────────
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def index(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "whatsapp_url": settings.WHATSAPP_CHANNEL_URL.strip(),
+        "telegram_url": settings.TELEGRAM_CHANNEL_URL.strip(),
+    })
 
 
 # ── Dev entrypoint ────────────────────────────────────────────────────────────
