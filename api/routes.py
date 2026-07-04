@@ -63,52 +63,267 @@ def get_groq() -> AsyncGroq:
 
 
 # ── CDACC System Prompt ───────────────────────────────────────────────────────
-SYSTEM_PROMPT = """You are an expert CDACC-certified D.Pharm pharmacy analysis assistant for Kenyan pharmacy students.
-You provide detailed, accurate, and educational pharmaceutical analysis aligned with the CDACC D.Pharm curriculum.
+SYSTEM_PROMPT = """You are PharmaScanKE — an AI tutor built specifically for students sitting the CDACC Diploma in Pharmacy (D.Pharm) examinations in Kenya.
 
-MANDATORY FORMATTING RULES:
+## Your Knowledge Base & Scope
+- You teach strictly within the CDACC D.Pharm 3-year curriculum as examined in Kenya.
+- You know the Kenya Pharmacy and Poisons Act (Cap. 244), the Kenya Essential Medicines List (KEML), the Pharmacy and Poisons Board (PPB) regulations, the Kenya Bureau of Standards (KEBS) pharmaceutical standards, and NASCOP treatment guidelines.
+- For clinical therapeutics, default to Kenya's national treatment guidelines and KEML drug selections, NOT US/UK guidelines unless the student explicitly asks for a comparison.
+- CDACC exams use structured short-answer and long-answer questions (SAQs/LAQs). When a student gives you a question, answer it in that format — numbered points, structured sections, marks-aware depth.
+
+## CDACC D.Pharm Curriculum Map (3 years, 6 semesters)
+Year 1 S1: Communication Skills · Introduction to Pharmacy Practice · Anatomy & Physiology I · Pharmaceutical Inorganic Chemistry · Pharmaceutical Mathematics · Computer Applications
+Year 1 S2: Anatomy & Physiology II · Pharmaceutical Organic Chemistry I · Physical Pharmacy · Microbiology & Immunology · Dispensing Pharmacy I
+Year 2 S1: General Pharmacology · Pharmaceutical Organic Chemistry II · Pharmacognosy I · Dispensing/Compounding II · Pathology
+Year 2 S2: Systemic Pharmacology · Pharmaceutics (Dosage Forms) · Pharmacognosy II · Hospital & Clinical Pharmacy I · Social Pharmacy & Administration
+Year 3 S1: Clinical Pharmacology & Therapeutics · Industrial Pharmacy · Hospital & Clinical Pharmacy II · Pharmacy Law & Ethics · Drug Information & Pharmacovigilance
+Year 3 S2: Community Pharmacy Practice · Research Methods & Project · Industrial Attachment
+
+## Exam Alignment Rules
+- Always pitch depth at CDACC D.Pharm diploma level — not undergraduate BPharm.
+- When answering exam-style questions: state the expected point count if marks are given (e.g. "4 marks → 4 distinct points").
+- Flag topics that are CDACC high-yield with: > **CDACC High-Yield:**
+- For past-paper style questions, structure your answer exactly as a student should write it in the exam room.
+- Reference specific CDACC units/modules when introducing a concept (e.g. "This falls under Unit 3 of Pharmacology I — General Pharmacology").
+
+## Kenya-Specific Context (always apply)
+- Drug selections: prefer KEML (Kenya Essential Medicines List) drugs and NASCOP/MOH guidelines.
+- Regulatory body: Pharmacy and Poisons Board (PPB), not FDA/MHRA.
+- Pharmacy Act: Kenya Pharmacy and Poisons Act Cap. 244 and its Subsidiary Legislation.
+- Measurement: metric system; doses in mg/kg for paediatrics per Kenya Paediatric Association guidelines.
+- Malaria: Kenya's first-line is AL (Artemether-Lumefantrine); for severe malaria use IV Artesunate per MOH.
+- TB: Kenya follows WHO/NTLP regimens (2HRZE/4HR).
+- HIV: Kenya follows NASCOP guidelines (TLD — Tenofovir/Lamivudine/Dolutegravir first-line).
+
+## MANDATORY FORMATTING RULES
 
 ### Structure & Headings
 1. Use ## for major section titles (e.g., ## Mechanism of Action, ## Pharmacokinetics).
-2. Use ### for sub-sections and topic headings (e.g., ### Beta-Lactam Ring Structure).
-3. Use #### for specific question prompts or sub-concept labels when addressing multiple questions.
-4. Every distinct question or exam-style prompt MUST be rendered as a ### heading so it renders in high-contrast teal — never bury questions in plain paragraph text.
+2. Use ### for sub-sections and topic headings.
+3. Use #### for specific question parts when a question has sub-parts (a, b, c).
+4. Every distinct exam question or sub-question MUST be a ### heading — never buried in paragraph text.
 
 ### Drug Structures
-5. For every drug or chemical entity discussed, include its PubChem structural image using EXACTLY this pattern:
+5. For every drug or chemical entity discussed, include its PubChem structural image:
    ![Drug Name Structure](https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/DRUGNAME/PNG)
    where DRUGNAME is lowercase and URL-safe (spaces → %20).
-   Example: ![Amoxicillin Structure](https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/amoxicillin/PNG)
 6. For drug classes, show the representative member's structure.
 
 ### Tables & Lists
-7. Use Markdown tables for: drug comparisons, ADME parameters, mechanism summaries, dose schedules.
+7. Use Markdown tables for: drug comparisons, ADME parameters, mechanism summaries, dose schedules, drug interactions.
 8. Use bullet lists for: properties, side effects, indications, contraindications, and exam notes.
 
-### Mathematical Formulas & Dosing Equations
-9. Wrap ALL mathematical formulas, dosing equations, and chemical equations in fenced code blocks (triple backtick):
+### Mathematical Formulas & Calculations
+9. Wrap ALL formulas, dosing calculations, and chemical equations in fenced code blocks:
    ```
    Dose (mg) = Volume of distribution (L/kg) × Body weight (kg) × Target concentration (mg/L)
    Clearance (CL) = 0.693 × Vd / t½
    Henderson-Hasselbalch: pH = pKa + log([A⁻]/[HA])
    ```
-   This ensures they render in a high-contrast dark panel with monospace font.
+   Show full working for pharmaceutical calculations — CDACC exams award marks for method.
 
-### Key Clinical Callouts
-10. Wrap critical warnings, clinical pearls, and high-yield exam facts in blockquotes (> ):
-    > **Clinical Pearl:** Penicillin allergy cross-reactivity with cephalosporins is ~1–2% (not 10% as historically cited).
-    > **Exam Fact:** Furosemide is a loop diuretic that acts on the thick ascending limb of the Loop of Henle.
-
-### Pharmacokinetics
-11. Always present ADME parameters in a structured table with columns: Parameter | Value | Clinical Significance.
+### Clinical Callouts
+10. Wrap critical warnings, clinical pearls, and high-yield exam facts in blockquotes:
+    > **Clinical Pearl:** statement here.
+    > **CDACC High-Yield:** statement here.
+    > **Kenya Context:** statement here.
+    > **Exam Fact:** statement here.
 
 ### Closing
-12. End every response with a ## Key Takeaways section containing 3–5 bullet clinical points.
-13. Keep language at D.Pharm diploma level — precise and clinically relevant.
-14. Reference CDACC syllabus units where applicable.
-
-Do not use decorative emojis in the main analysis body.
+11. End every response with a ## Key Takeaways section — 3–5 bullet points a student can use as a last-minute revision summary.
+12. Do not use decorative emojis in the main analysis body.
 """
+
+# ── CDACC Subject-Specific Context Injected Per Request ──────────────────────
+CDACC_SUBJECT_CONTEXT: dict[str, str] = {
+    "Anatomy and Physiology I": (
+        "CDACC Unit context: Anatomy & Physiology I (Y1S1). "
+        "Cover cell biology, tissue types, skeletal system, muscular system, and nervous system basics. "
+        "Exam focus: labelled diagrams described in text, structure-function relationships, "
+        "clinical correlations to pharmacy practice (e.g. how nerve physiology relates to drug action sites)."
+    ),
+    "Anatomy and Physiology II": (
+        "CDACC Unit context: Anatomy & Physiology II (Y1S2). "
+        "Cover cardiovascular, respiratory, renal, digestive, endocrine, and reproductive systems. "
+        "Exam focus: organ functions, homeostasis mechanisms, pharmacological relevance "
+        "(e.g. renal physiology → drug excretion; cardiac physiology → antiarrhythmic targets)."
+    ),
+    "Pharmaceutical Inorganic Chemistry": (
+        "CDACC Unit context: Pharmaceutical Inorganic Chemistry (Y1S1). "
+        "Cover periodic table trends, ionic equilibria, buffer solutions, complexometric titrations, "
+        "gravimetric and volumetric analysis, and medicinal inorganic compounds (e.g. antacids, iron salts, iodine). "
+        "Exam focus: titration calculations, pH/buffer problems, and pharmaceutical applications of inorganic ions."
+    ),
+    "Pharmaceutical Mathematics": (
+        "CDACC Unit context: Pharmaceutical Mathematics (Y1S1). "
+        "Cover ratio/proportion, percentage calculations, alligation, dilution, dose calculations (mg/kg, mg/m²), "
+        "flow rates, electrolyte calculations (mEq, mmol), and isotonicity. "
+        "Exam focus: always show full working — marks are awarded for method. "
+        "Use SI units. Show unit conversions explicitly."
+    ),
+    "Introduction to Pharmacy Practice": (
+        "CDACC Unit context: Introduction to Pharmacy Practice (Y1S1). "
+        "Cover history of pharmacy in Kenya, roles of the pharmacist, pharmacy settings (community, hospital, industry), "
+        "the PPB (Pharmacy and Poisons Board), Kenya Pharmacy and Poisons Act Cap. 244, "
+        "drug scheduling in Kenya (Schedules 1–4), and ethical principles in pharmacy."
+    ),
+    "Pharmaceutical Organic Chemistry I": (
+        "CDACC Unit context: Pharmaceutical Organic Chemistry I (Y1S2). "
+        "Cover IUPAC nomenclature, functional groups, isomerism (structural, geometric, optical), "
+        "reaction mechanisms (substitution, addition, elimination), and pharmaceutical relevance "
+        "(e.g. chirality in drug action, ester hydrolysis in prodrugs). "
+        "Exam focus: naming compounds, drawing mechanisms, explaining stereochemistry."
+    ),
+    "Pharmaceutical Organic Chemistry II": (
+        "CDACC Unit context: Pharmaceutical Organic Chemistry II (Y2S1). "
+        "Cover aromatic chemistry, heterocyclic compounds, alkaloids, amino acids/proteins, "
+        "carbohydrates, lipids, and structure-activity relationships (SAR). "
+        "Exam focus: SAR questions, synthesis pathways, and pharmacophore identification."
+    ),
+    "Physical Pharmacy": (
+        "CDACC Unit context: Physical Pharmacy (Y1S2). "
+        "Cover states of matter, solubility, dissolution, diffusion, surface tension, viscosity, "
+        "colloidal systems, rheology, and partition coefficients. "
+        "Exam focus: Henderson-Hasselbalch calculations, Fick's law problems, "
+        "and explaining how physical properties affect drug formulation and absorption."
+    ),
+    "Microbiology and Immunology": (
+        "CDACC Unit context: Microbiology & Immunology (Y1S2). "
+        "Cover bacterial cell structure, Gram staining, culture methods, sterilisation/disinfection, "
+        "viruses, fungi, parasites, and immune system (innate, adaptive, vaccines). "
+        "Kenya context: common pathogens in Kenya — Plasmodium, MTB, HIV, H. pylori. "
+        "Exam focus: compare Gram +ve vs –ve bacteria, mechanisms of sterilisation, vaccine types."
+    ),
+    "Microbiology and Parasitology": (
+        "CDACC Unit context: Microbiology & Parasitology (Y1S2/Y2S1). "
+        "Cover bacterial cell structure, Gram staining, culture methods, sterilisation/disinfection, "
+        "and parasitology — protozoa (Plasmodium, Leishmania, Trypanosoma, Entamoeba), "
+        "helminths (roundworms, tapeworms, flukes), and ectoparasites. "
+        "Kenya context: malaria (P. falciparum dominant), schistosomiasis, soil-transmitted helminths. "
+        "Exam focus: life cycles, vectors, and drug treatment aligned with Kenya MOH guidelines."
+    ),
+    "Dispensing Pharmacy I": (
+        "CDACC Unit context: Dispensing Pharmacy I (Y1S2). "
+        "Cover prescription reading/interpretation, abbreviations (Latin and modern), dispensing procedures, "
+        "labelling requirements under Kenya Pharmacy and Poisons Act, basic compounding, "
+        "patient counselling, and dispensing errors. "
+        "Exam focus: prescription interpretation exercises, calculating quantities to dispense, labelling."
+    ),
+    "Dispensing and Compounding": (
+        "CDACC Unit context: Dispensing/Compounding II (Y2S1). "
+        "Cover extemporaneous compounding — solutions, suspensions, emulsions, suppositories, "
+        "ointments/creams, capsule filling. Cover incompatibilities (physical, chemical, therapeutic). "
+        "Exam focus: compounding calculations, identifying incompatibilities, writing preparation notes."
+    ),
+    "General Pharmacology": (
+        "CDACC Unit context: General Pharmacology / Pharmacology I (Y2S1). "
+        "Cover pharmacokinetics (ADME), pharmacodynamics (receptor theory, dose-response, agonist/antagonist), "
+        "drug interactions, adverse drug reactions, and factors affecting drug response "
+        "(age, renal/hepatic impairment, pharmacogenomics). "
+        "Exam focus: ADME calculations, explain receptor mechanisms, classify ADRs (WHO classification)."
+    ),
+    "Pathology": (
+        "CDACC Unit context: Pathology (Y2S1). "
+        "Cover cell injury/death, inflammation, wound healing, neoplasia, haemodynamic disorders, "
+        "and organ-system pathology relevant to pharmacy (liver disease, renal failure, heart failure). "
+        "Exam focus: link pathological mechanisms to drug therapy — e.g. hepatic failure → reduced drug metabolism."
+    ),
+    "Pharmacognosy I": (
+        "CDACC Unit context: Pharmacognosy I (Y2S1). "
+        "Cover definition/scope of pharmacognosy, plant taxonomy, plant cell/tissue types, "
+        "primary and secondary metabolites (alkaloids, glycosides, tannins, essential oils, resins, gums). "
+        "Kenya context: local medicinal plants — Neem (Azadirachta indica), Moringa, Prunus africana. "
+        "Exam focus: define/classify secondary metabolites, describe extraction methods, identify adulterants."
+    ),
+    "Pharmacognosy II": (
+        "CDACC Unit context: Pharmacognosy II (Y2S2). "
+        "Cover volatile oils, fixed oils/fats, waxes, carbohydrates (starch, cellulose, mucilages), "
+        "resins, fibres, and evaluation of crude drugs (organoleptic, microscopic, chemical, biological assay). "
+        "Exam focus: drug evaluation methods, sources, and pharmaceutical uses of natural products."
+    ),
+    "Pharmacology and Therapeutics": (
+        "CDACC Unit context: Systemic Pharmacology / Pharmacology II & III (Y2S2–Y3S1). "
+        "Cover system-by-system drug therapy: CVS (antihypertensives, antiarrhythmics, heart failure drugs), "
+        "CNS (analgesics, antiepileptics, antipsychotics, antidepressants), ANS (adrenergic, cholinergic), "
+        "respiratory, GI, endocrine (diabetes, thyroid), antimicrobials, anticancer, and immunosuppressants. "
+        "Kenya context: use KEML drug selections; malaria (AL, quinine, artesunate), TB (2HRZE/4HR), "
+        "HIV (TLD per NASCOP). "
+        "Exam focus: mechanism, indications, contraindications, ADRs, interactions in tabular format."
+    ),
+    "Systemic Pharmacology": (
+        "CDACC Unit context: Systemic Pharmacology / Pharmacology II (Y2S2). "
+        "Cover cardiovascular, CNS, ANS, respiratory, GI, and endocrine pharmacology. "
+        "Apply KEML drug selections throughout. "
+        "Exam focus: mechanism + ADR + interaction tables; Kenya-relevant case scenarios."
+    ),
+    "Clinical Pharmacology and Therapeutics": (
+        "CDACC Unit context: Clinical Pharmacology & Therapeutics / Pharmacology III (Y3S1). "
+        "Cover therapeutic drug monitoring, individualising drug therapy, renal/hepatic dose adjustment, "
+        "paediatric/geriatric pharmacology, pregnancy and lactation drug safety, "
+        "and management of common disease states in Kenya (hypertension, diabetes, malaria, TB, HIV, epilepsy). "
+        "Exam focus: case-based questions — select a drug, justify using Kenya guidelines, identify monitoring parameters."
+    ),
+    "Pharmaceutics": (
+        "CDACC Unit context: Pharmaceutics — Dosage Forms (Y2S2). "
+        "Cover classification and formulation of: tablets, capsules, solutions, suspensions, emulsions, "
+        "suppositories, transdermal patches, inhalers, and parenterals. "
+        "Cover excipients, stability, packaging, and bioavailability. "
+        "Exam focus: list formulation steps, state excipient functions, calculate overage/shelf-life."
+    ),
+    "Industrial Pharmacy": (
+        "CDACC Unit context: Industrial Pharmacy (Y3S1). "
+        "Cover GMP (Good Manufacturing Practice), pharmaceutical plant layout, large-scale manufacturing "
+        "(granulation, coating, filling, aseptic processing), QC/QA, regulatory approval processes in Kenya (PPB), "
+        "and pharmaceutical packaging. "
+        "Exam focus: explain GMP principles, describe manufacturing unit operations, QC tests for dosage forms."
+    ),
+    "Hospital and Clinical Pharmacy": (
+        "CDACC Unit context: Hospital & Clinical Pharmacy I & II (Y2S2–Y3S1). "
+        "Cover hospital pharmacy organisation, drug procurement/storage (KEMSA), formulary management, "
+        "ward rounds, medication reconciliation, TPN, clinical interventions, ADR reporting (PPB), "
+        "and pharmacovigilance in Kenya. "
+        "Exam focus: pharmacy and therapeutics committee roles, drug information queries, "
+        "monitoring parameters for high-risk medicines."
+    ),
+    "Social Pharmacy and Administration": (
+        "CDACC Unit context: Social Pharmacy & Administration (Y2S2). "
+        "Cover pharmacy management (stock control, FIFO/FEFO, procurement cycles), "
+        "health economics (cost-effectiveness), pharmacoepidemiology, "
+        "rational drug use (RDU) — WHO indicators, "
+        "patient compliance/adherence factors, and health promotion in Kenya. "
+        "Exam focus: calculate stock levels, define RDU indicators, health systems in Kenya (NHIF/SHA structure)."
+    ),
+    "Pharmacy Law and Ethics": (
+        "CDACC Unit context: Pharmacy Law & Ethics (Y3S1). "
+        "Cover Kenya Pharmacy and Poisons Act Cap. 244 and its schedules, "
+        "Poisons Schedules 1–4 (storage, labelling, dispensing requirements), "
+        "PPB functions and powers, professional misconduct and disciplinary procedures, "
+        "Narcotic Drugs and Psychotropic Substances Act, and bioethical principles (autonomy, beneficence, non-maleficence, justice). "
+        "Exam focus: apply the Act to scenarios, define pharmacist liabilities, state schedule requirements."
+    ),
+    "Drug Information and Pharmacovigilance": (
+        "CDACC Unit context: Drug Information & Pharmacovigilance (Y3S1). "
+        "Cover drug information sources (primary, secondary, tertiary), evaluating drug literature, "
+        "evidence-based pharmacy, ADR classification (WHO-UMC causality), "
+        "pharmacovigilance systems in Kenya (PPB Yellow Card), and post-marketing surveillance. "
+        "Exam focus: retrieve and critically evaluate drug information; classify and report ADRs."
+    ),
+    "Community Pharmacy Practice": (
+        "CDACC Unit context: Community Pharmacy Practice (Y3S2). "
+        "Cover community pharmacy set-up requirements (PPB premises standards), "
+        "OTC counselling, minor ailments management, health screening (BP, glucose, BMI), "
+        "prescription-only vs OTC classification in Kenya, patient medication records, "
+        "and pharmaceutical care planning. "
+        "Exam focus: OTC recommendation scenarios, PPB premises requirements, patient counselling frameworks (WWHAM, ENCORE)."
+    ),
+    "Research Methods": (
+        "CDACC Unit context: Research Methods & Project (Y3S2). "
+        "Cover research design (qualitative vs quantitative), sampling techniques, "
+        "data collection tools (questionnaires, interviews), ethical approval (ERC in Kenya), "
+        "basic statistics (mean, SD, p-value, chi-square, t-test), and writing a research report. "
+        "Exam focus: identify study design, calculate descriptive statistics, critique a methodology section."
+    ),
+}
 
 # ── Pharmacy180.com Concept Map ───────────────────────────────────────────────
 PHARMACY180_MAP: dict[str, str] = {
@@ -486,32 +701,39 @@ async def analyze_content(request: Request, body: AnalysisRequest) -> AnalysisRe
                     "Extracted %d chars from %s (%s)", len(excerpt), body.file_name, ext
                 )
 
+    # Build subject-specific CDACC context block
+    cdacc_ctx = ""
+    if body.subject:
+        subject_detail = CDACC_SUBJECT_CONTEXT.get(body.subject, "")
+        if subject_detail:
+            cdacc_ctx = f"[CDACC Subject: {body.subject}]\n{subject_detail}\n\n"
+        else:
+            cdacc_ctx = f"[CDACC Subject: {body.subject}]\n\n"
+
     if use_file:
-        subject_line = f"Subject/Unit Context: {body.subject}\n" if body.subject else ""
         word_count = len(excerpt.split())
         file_ctx = (
-            f"{subject_line}"
-            f"The student has uploaded a pharmacy study document for analysis.\n"
+            f"{cdacc_ctx}"
+            f"The student has uploaded a CDACC D.Pharm study resource for analysis.\n"
             f"Filename: {body.file_name} (format: {ext.upper()})\n"
             f"Extracted text: ~{word_count} words\n\n"
             f"--- BEGIN DOCUMENT CONTENT ---\n{excerpt}\n--- END DOCUMENT CONTENT ---\n\n"
             f"Student's analysis prompt: {body.prompt}\n\n"
-            "Using the extracted document content above, provide a thorough D.Pharm-level "
-            "pharmaceutical analysis. Quote specific passages from the document where relevant. "
-            "Include PubChem structural images for all drugs or chemical entities identified."
+            "Using the document content above, provide a thorough CDACC D.Pharm-level analysis "
+            "aligned with the Kenyan curriculum. Quote specific passages where relevant. "
+            "Flag CDACC high-yield topics. Include PubChem structural images for all drugs identified."
         )
         messages.append({"role": "user", "content": file_ctx})
     else:
         # Pure text-only pipeline
-        subject_ctx = f"[Subject/Unit: {body.subject}]\n\n" if body.subject else ""
         fallback_note = (
-            f"\n\n[Note: File analysis was skipped — {fallback_reason}. "
-            "Proceeding with text-only analysis based on your prompt.]\n\n"
+            f"\n[Note: File analysis was skipped — {fallback_reason}. "
+            "Proceeding with text-only analysis.]\n\n"
             if fallback_reason else ""
         )
         messages.append({
             "role": "user",
-            "content": f"{subject_ctx}{fallback_note}{body.prompt}",
+            "content": f"{cdacc_ctx}{fallback_note}{body.prompt}",
         })
 
     try:
@@ -524,11 +746,45 @@ async def analyze_content(request: Request, body: AnalysisRequest) -> AnalysisRe
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Groq call failed: %s: %s", type(exc).__name__, exc)
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="AI analysis service is temporarily unavailable. Please try again.",
-        ) from exc
+        exc_name = type(exc).__name__
+        exc_str  = str(exc).lower()
+        logger.error("Groq call failed: %s: %s", exc_name, exc)
+
+        # Map specific Groq / network errors to helpful user messages
+        if "authentication" in exc_str or "invalid_api_key" in exc_str or "401" in exc_str:
+            detail = (
+                "Invalid GROQ_API_KEY — the key was rejected by Groq. "
+                "Please verify the key at console.groq.com and update it in your Railway Variables."
+            )
+            code = status.HTTP_503_SERVICE_UNAVAILABLE
+        elif "rate_limit" in exc_str or "429" in exc_str:
+            detail = (
+                "Groq rate limit reached. You have exceeded the free-tier request quota. "
+                "Wait a minute then try again, or upgrade your Groq plan."
+            )
+            code = status.HTTP_429_TOO_MANY_REQUESTS
+        elif "model_not_found" in exc_str or "does not exist" in exc_str or "404" in exc_str:
+            detail = (
+                f"Groq model '{settings.GROQ_MODEL}' was not found. "
+                "It may have been deprecated. Contact support to update GROQ_MODEL."
+            )
+            code = status.HTTP_502_BAD_GATEWAY
+        elif "timeout" in exc_str or "timed out" in exc_str:
+            detail = (
+                "The AI request timed out. Your prompt or document may be too long. "
+                "Try a shorter prompt or smaller file."
+            )
+            code = status.HTTP_504_GATEWAY_TIMEOUT
+        elif "connect" in exc_str or "network" in exc_str or "connection" in exc_str:
+            detail = (
+                "Cannot reach Groq servers. Check your Railway deployment has outbound internet access."
+            )
+            code = status.HTTP_502_BAD_GATEWAY
+        else:
+            detail = f"AI service error ({exc_name}): {str(exc)[:200]}"
+            code = status.HTTP_502_BAD_GATEWAY
+
+        raise HTTPException(status_code=code, detail=detail) from exc
 
     if not completion.choices:
         raise HTTPException(
