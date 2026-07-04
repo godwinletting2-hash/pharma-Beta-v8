@@ -1,0 +1,42 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env/
+
+# Environment secrets (never commit)
+.env
+.env.local
+.env.production
+
+# SQLite database (Railway creates a fresh one on deploy)
+*.db
+*.db-shm
+*.db-wal
+
+# Uploaded files (user-generated, not source code)
+uploaded_notes/*
+!uploaded_notes/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build / dist artefacts
+dist/
+build/
+*.egg-info/
